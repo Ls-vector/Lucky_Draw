@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Multi-Device Lucky Draw</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --primary: #e94560; --bg: #1a1a2e; --accent: #44ffaa; }
+        body { font-family: sans-serif; background: var(--bg); color: white; display: flex; justify-content: center; padding: 20px; }
+        .container { width: 100%; max-width: 500px; text-align: center; background: #16213e; padding: 2rem; border-radius: 20px; }
+        .display-box { height: 150px; background: #0f3460; margin: 20px 0; border: 4px solid var(--primary); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #winner-name { font-size: 2rem; font-weight: bold; }
+        #winner-award { font-size: 1.2rem; color: var(--accent); margin-top: 10px; }
+        .admin-only { display: none; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
+        textarea { width: 100%; height: 80px; background: #0f3460; color: #fff; border: 1px solid #555; margin-bottom: 10px; }
+        button { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .shuffling { animation: bounce 0.1s infinite; }
+        @keyframes bounce { 50% { transform: translateY(-5px); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>LIVE DRAW</h1>
+    <div class="display-box" id="display">
+        <div id="winner-name">Waiting for Host...</div>
+        <div id="winner-award"></div>
+    </div>
+
+    <div id="admin-controls" class="admin-only">
+        <button onclick="triggerDraw()">RUN DRAW (SYNC ALL DEVICES)</button>
+        <h3 style="font-size: 0.8rem; color: #888; margin-top: 20px;">PARTICIPANTS (Comma separated)</h3>
+        <textarea id="names-input">John, Sarah, Mike, Elena</textarea>
+        <h3 style="font-size: 0.8rem; color: #888;">AWARDS (Comma separated)</h3>
+        <textarea id="awards-input">iPhone 15, Gift Card, $50, Coffee Mug</textarea>
+        <p><input type="checkbox" id="remove-winner"> Remove winner after draw</p>
+    </div>
+
+    <p style="font-size: 0.7rem; cursor: pointer; color: #333;" onclick="toggleAdmin()">Admin Access</p>
+</div>
+
+<script>
+    // --- STEP 3: PASTE YOUR FIREBASE CONFIG HERE ---
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+        projectId: "YOUR_PROJECT",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_ID",
+        appId: "YOUR_APP_ID"
+    };
+    // -----------------------------------------------
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function toggleAdmin() {
+        const pass = prompt("Enter Admin Password:");
+        if (pass === "1234") { // Set your own password here
+            document.getElementById('admin-controls').style.display = 'block';
+        }
+    }
+
+    // LISTENER: All phones will run this when the database changes
+    db.ref('currentDraw').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        const nameEl = document.getElementById('winner-name');
+        const awardEl = document.getElementById('winner-award');
+        const display = document.getElementById('display');
+
+        // Start Animation on all phones
+        display.classList.add('shuffling');
+        nameEl.innerText = "Drawing...";
+        awardEl.innerText = "";
+
+        setTimeout(() => {
+            display.classList.remove('shuffling');
+            nameEl.innerText = "🏆 " + data.winner;
+            awardEl.innerText = "Wins: " + data.award;
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        }, 3000); // 3 second sync animation
+    });
+
+    // ADMIN FUNCTION: Triggered only from laptop
+    function triggerDraw() {
+        const names = document.getElementById('names-input').value.split(',').map(n => n.trim()).filter(n => n);
+        const awards = document.getElementById('awards-input').value.split(',').map(n => n.trim()).filter(n => n);
+
+        if (names.length === 0 || awards.length === 0) return alert("Fill names and awards!");
+
+        const winner = names[Math.floor(Math.random() * names.length)];
+        const award = awards[Math.floor(Math.random() * awards.length)];
+
+        // Update Firebase - this triggers the 'on value' for everyone
+        db.ref('currentDraw').set({
+            winner: winner,
+            award: award,
+            timestamp: Date.now()
+        });
+
+        if (document.getElementById('remove-winner').checked) {
+            const newNames = names.filter(n => n !== winner);
+            document.getElementById('names-input').value = newNames.join(', ');
+        }
+    }
+</script>
+</body>
+</html>
