@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Sync Lucky Draw</title>
+    <title>Live Sync Lucky Draw | Secure Control</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -11,88 +11,92 @@
     <style>
         :root { --primary: #e94560; --bg: #1a1a2e; --accent: #44ffaa; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { width: 100%; max-width: 500px; text-align: center; background: #16213e; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .container { width: 100%; max-width: 500px; text-align: center; background: #16213e; padding: 2.2rem; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #252e42; position: relative; }
         
-        .display-box { height: 160px; background: #0f3460; margin: 20px 0; border: 4px solid var(--primary); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #winner-name { font-size: 2.2rem; font-weight: bold; }
-        #winner-award { font-size: 1.1rem; color: var(--accent); margin-top: 10px; }
+        /* Main Result Display */
+        .display-box { height: 180px; background: #0f3460; margin: 25px 0; border: 4px solid var(--primary); border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        #winner-name { font-size: 2.4rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        #winner-award { font-size: 1.2rem; color: var(--accent); margin-top: 12px; font-weight: 600; }
 
-        #draw-btn { background: var(--primary); color: white; border: none; padding: 20px; width: 100%; border-radius: 50px; font-size: 1.5rem; font-weight: bold; cursor: pointer; display: none; margin-top: 20px; }
-        #draw-btn:disabled { background: #444; opacity: 0.5; }
+        /* PHONE TRIGGER BUTTON (Hidden by default) */
+        #draw-btn { background: linear-gradient(135deg, #e94560 0%, #950740 100%); color: white; border: none; padding: 25px; width: 100%; border-radius: 50px; font-size: 1.8rem; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 8px 20px rgba(233, 69, 96, 0.4); margin-top: 20px; }
+        #draw-btn:active { transform: scale(0.96); }
+        #draw-btn:disabled { background: #444; opacity: 0.6; cursor: not-allowed; }
 
-        .admin-panel { display: none; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
-        textarea { width: 100%; height: 70px; background: #0f3460; color: #fff; border: 1px solid #444; border-radius: 8px; margin: 5px 0 10px; padding: 10px; box-sizing: border-box; }
+        /* LAPTOP ADMIN PANEL (Hidden by default) */
+        .admin-panel { display: none; margin-top: 35px; border-top: 2px solid #252e42; padding-top: 25px; text-align: left; }
+        textarea { width: 100%; height: 90px; background: #0f3460; color: #fff; border: 1px solid #333; border-radius: 12px; margin: 8px 0 15px; padding: 12px; font-family: inherit; resize: none; }
         
-        .shuffling { animation: bounce 0.1s infinite; color: var(--primary); }
-        @keyframes bounce { 50% { transform: translateY(-5px); } }
-        
-        .sync-status { font-size: 0.7rem; color: #44ffaa; margin-bottom: 10px; }
+        /* Status & Animation */
+        .shuffling { animation: jitter 0.1s infinite; color: var(--primary); }
+        @keyframes jitter { 0% { transform: rotate(0deg); } 25% { transform: rotate(1deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
+        .sync-indicator { font-size: 0.75rem; color: #44ffaa; margin-bottom: 15px; opacity: 0.8; }
+        .hidden-trigger { font-size: 0.7rem; color: #1a1a2e; cursor: pointer; position: absolute; bottom: 10px; width: 100%; left: 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="sync-status">● Live Sync Active</div>
-    <h1>LUCKY DRAW</h1>
+    <div class="sync-indicator">● LIVE SYNC ACTIVE</div>
+    <h1 style="margin:0; font-size: 1.8rem;">LUCKY DRAW</h1>
     
     <div class="display-box" id="display">
         <div id="winner-name">Ready?</div>
-        <div id="winner-award">Waiting for Draw...</div>
+        <div id="winner-award">Wait for the Trigger...</div>
     </div>
 
     <button id="draw-btn" onclick="requestDraw()">TAP TO DRAW!</button>
 
     <div id="admin-controls" class="admin-panel">
-        <h2 style="font-size: 1rem; color: var(--accent);">Admin Control (Laptop)</h2>
+        <h2 style="font-size: 1.1rem; color: var(--accent);">Admin Command Center</h2>
         
-        <label>Participants</label>
-        <textarea id="names-input" oninput="syncSettings()">John, Sarah, Mike</textarea>
+        <label style="font-size: 0.85rem; color: #8892b0;">Participants (Comma Separated)</label>
+        <textarea id="names-input" oninput="syncToCloud()"></textarea>
         
-        <label>Awards</label>
-        <textarea id="awards-input" oninput="syncSettings()">Gold Medal, Silver Medal</textarea>
+        <label style="font-size: 0.85rem; color: #8892b0;">Awards (Comma Separated)</label>
+        <textarea id="awards-input" oninput="syncToCloud()"></textarea>
         
-        <div style="background: #0f3460; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-            <p><input type="checkbox" id="remove-winner" onchange="syncSettings()" checked> Auto-remove winner</p>
-            <p><input type="checkbox" id="is-trigger-device" onchange="toggleTriggerUI()"> <b>This is the Trigger Phone</b></p>
+        <div style="background: #0f3460; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+            <p style="margin:0;"><input type="checkbox" id="remove-winner" onchange="syncToCloud()" checked> Remove winner from list</p>
         </div>
-        <button onclick="resetDraw()" style="background: #333; font-size: 0.9rem; padding: 10px;">Reset Screen for Everyone</button>
+        <button onclick="resetSystem()" style="background: #252e42; color: #fff; padding: 10px; width: 100%; border-radius: 8px;">Reset Screen (Clear Winner)</button>
     </div>
 
-    <p style="font-size: 0.7rem; color: #222; margin-top: 30px;" onclick="unlockAdmin()">Admin Menu</p>
+    <div class="hidden-trigger" onclick="accessControl('admin')">.</div>
+    <div class="hidden-trigger" style="bottom: 20px;" onclick="accessControl('trigger')">.</div>
 </div>
 
 <script>
-    // --- PASTE YOUR FIREBASE CONFIG HERE ---
+    // --- REPLACE THIS WITH YOUR FIREBASE CONFIG ---
     const firebaseConfig = {
-          apiKey: "AIzaSyBPyOSIy7tTLIpJME20Zz8et3fSFsFZnEs",
-  authDomain: "luckydraw-9279e.firebaseapp.com",
-  databaseURL: "https://luckydraw-9279e-default-rtdb.firebaseio.com",
-  projectId: "luckydraw-9279e",
-  storageBucket: "luckydraw-9279e.firebasestorage.app",
-  messagingSenderId: "658856386719",
-  appId: "1:658856386719:web:367f21ec05611b036202aa",
-  measurementId: "G-SC7BND34RN"
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+        projectId: "YOUR_PROJECT",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_ID",
+        appId: "YOUR_APP_ID"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. ADMIN LOCK
-    function unlockAdmin() {
-        if (prompt("Enter Password:") === "1234") {
-            document.getElementById('admin-controls').style.display = 'block';
+    // 1. ACCESS CONTROL (Hidden at the bottom of the screen)
+    function accessControl(mode) {
+        const pass = prompt("Enter Access Key:");
+        if (pass === "1234") {
+            if (mode === 'admin') {
+                document.getElementById('admin-controls').style.display = 'block';
+                document.getElementById('draw-btn').style.display = 'none';
+            } else if (mode === 'trigger') {
+                document.getElementById('draw-btn').style.display = 'block';
+                document.getElementById('admin-controls').style.display = 'none';
+            }
         }
     }
 
-    // 2. TRIGGER UI (One Phone Only)
-    function toggleTriggerUI() {
-        const isTrigger = document.getElementById('is-trigger-device').checked;
-        document.getElementById('draw-btn').style.display = isTrigger ? 'block' : 'none';
-    }
-
-    // 3. AUTO-UPDATE SETTINGS (Laptop to Cloud)
-    // Whenever you type on the laptop, it updates the cloud instantly
-    function syncSettings() {
+    // 2. LAPTOP -> CLOUD (Auto-syncs settings)
+    function syncToCloud() {
         db.ref('settings').set({
             names: document.getElementById('names-input').value,
             awards: document.getElementById('awards-input').value,
@@ -100,51 +104,50 @@
         });
     }
 
-    // 4. AUTO-REFRESH LISTENER (Cloud to Phones)
-    // This keeps the names/awards list updated on the Trigger Phone automatically
+    // 3. CLOUD -> ALL (Syncs the list so phone has latest data)
     db.ref('settings').on('value', (snap) => {
-        const s = snap.val();
-        if (!s) return;
-        document.getElementById('names-input').value = s.names;
-        document.getElementById('awards-input').value = s.awards;
-        document.getElementById('remove-winner').checked = s.removeWinner;
+        const data = snap.val();
+        if (!data) return;
+        document.getElementById('names-input').value = data.names;
+        document.getElementById('awards-input').value = data.awards;
+        document.getElementById('remove-winner').checked = data.removeWinner;
     });
 
-    // 5. TRIGGER DRAW (Phone to Cloud)
+    // 4. PHONE -> CLOUD (Trigger Draw)
     function requestDraw() {
         const names = document.getElementById('names-input').value.split(',').map(n => n.trim()).filter(n => n);
         const awards = document.getElementById('awards-input').value.split(',').map(n => n.trim()).filter(n => n);
 
-        if (names.length === 0) return alert("No names left!");
+        if (names.length === 0) return alert("All participants have been drawn!");
 
         const winner = names[Math.floor(Math.random() * names.length)];
-        const award = awards[Math.floor(Math.random() * awards.length)] || "Special Prize";
+        const award = awards[Math.floor(Math.random() * awards.length)] || "Prize";
 
-        db.ref('currentDraw').set({ state: 'drawing', winner: winner, award: award, t: Date.now() });
+        db.ref('liveDraw').set({ status: 'spinning', winner: winner, award: award, timestamp: Date.now() });
 
         if (document.getElementById('remove-winner').checked) {
-            const updated = names.filter(n => n !== winner).join(', ');
-            document.getElementById('names-input').value = updated;
-            syncSettings(); // Update the cloud so the laptop sees the new list
+            const newList = names.filter(n => n !== winner).join(', ');
+            document.getElementById('names-input').value = newList;
+            syncToCloud(); 
         }
     }
 
-    function resetDraw() {
-        db.ref('currentDraw').set({ state: 'ready', t: Date.now() });
+    function resetSystem() {
+        db.ref('liveDraw').set({ status: 'ready', timestamp: Date.now() });
     }
 
-    // 6. ANIMATION SYNC (Cloud to ALL Devices)
-    db.ref('currentDraw').on('value', (snap) => {
+    // 5. ANIMATION SYNC (The Magic)
+    db.ref('liveDraw').on('value', (snap) => {
         const data = snap.val();
         const nameEl = document.getElementById('winner-name');
         const awardEl = document.getElementById('winner-award');
         const display = document.getElementById('display');
         const btn = document.getElementById('draw-btn');
 
-        if (!data || data.state === 'ready') {
+        if (!data || data.status === 'ready') {
             display.classList.remove('shuffling');
             nameEl.innerText = "Ready?";
-            awardEl.innerText = "Waiting for Draw...";
+            awardEl.innerText = "Wait for the Trigger...";
             nameEl.style.color = "white";
             return;
         }
@@ -157,7 +160,7 @@
         setTimeout(() => {
             display.classList.remove('shuffling');
             nameEl.innerText = "🏆 " + data.winner;
-            awardEl.innerText = "WINNER: " + data.award;
+            awardEl.innerText = "AWARD: " + data.award;
             nameEl.style.color = "#44ffaa";
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             btn.disabled = false;
