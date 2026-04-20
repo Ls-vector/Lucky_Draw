@@ -36,17 +36,21 @@ button{padding:10px 20px;margin:10px;cursor:pointer}
 <h2 id="winner">Waiting...</h2>
 
 <script>
-// 🔥 FIREBASE CONFIG
+
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBKMryvAUR4SOCWcl8P8JfGexZNSejD_E8",
   authDomain: "rafale-draw.firebaseapp.com",
-  databaseURL: "https://rafale-draw-default-rtdb.firebaseio.com",
   projectId: "rafale-draw",
   storageBucket: "rafale-draw.firebasestorage.app",
   messagingSenderId: "278599574531",
-  appId: "1:278599574531:web:1016ea3f9f79f526151a36"
+  appId: "1:278599574531:web:1016ea3f9f79f526151a36",
+  measurementId: "G-ZZW368S4YF"
 };
 
+
+  
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
