@@ -4,643 +4,76 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lucky Draw</title>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --gold: #f5c842;
-    --gold-dark: #c9a020;
-    --bg: #0d0d0d;
-    --surface: #151515;
-    --surface2: #1e1e1e;
-    --border: #2a2a2a;
-    --text: #f0f0f0;
-    --muted: #777;
-    --accent: #f5c842;
-    --red: #e94040;
-    --green: #3ddc84;
-  }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-
-  #mode-screen {
-    width: 100%;
-    max-width: 420px;
-    text-align: center;
-  }
-  #mode-screen h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 3.2rem;
-    letter-spacing: 4px;
-    color: var(--gold);
-    margin-bottom: 6px;
-  }
-  #mode-screen p {
-    color: var(--muted);
-    font-size: 0.9rem;
-    margin-bottom: 40px;
-  }
-  .mode-btn {
-    width: 100%;
-    padding: 20px;
-    margin-bottom: 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .mode-btn:hover { border-color: var(--gold); background: #1a1a1a; }
-  .mode-btn .icon { font-size: 1.6rem; width: 44px; text-align: center; }
-  .mode-btn small { display: block; color: var(--muted); font-size: 0.78rem; font-weight: 400; margin-top: 2px; }
-
-  #app { display: none; width: 100%; max-width: 520px; }
-
-  .top-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-  }
-  .top-bar h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    letter-spacing: 3px;
-    color: var(--gold);
-  }
-  .badge {
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-weight: 600;
-    letter-spacing: 1px;
-  }
-  .badge-live { background: rgba(61,220,132,0.15); color: var(--green); border: 1px solid rgba(61,220,132,0.3); }
-  .badge-admin { background: rgba(245,200,66,0.12); color: var(--gold); border: 1px solid rgba(245,200,66,0.3); }
-  .badge-mobile { background: rgba(233,64,64,0.12); color: var(--red); border: 1px solid rgba(233,64,64,0.3); }
-
-  .winner-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 40px 30px;
-    text-align: center;
-    margin-bottom: 24px;
-    min-height: 200px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-  }
-  .winner-box::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 0%, rgba(245,200,66,0.06) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  #winner-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 3rem;
-    letter-spacing: 3px;
-    color: var(--text);
-    transition: color 0.4s;
-    line-height: 1;
-  }
-  #winner-name.revealed { color: var(--gold); }
-  #winner-award {
-    font-size: 0.95rem;
-    color: var(--muted);
-    margin-top: 10px;
-    font-weight: 500;
-    letter-spacing: 1px;
-  }
-  #winner-award.revealed { color: var(--green); }
-
-  .slot-ticker {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.1rem;
-    color: var(--muted);
-    letter-spacing: 2px;
-    height: 20px;
-    margin-top: 16px;
-    transition: opacity 0.3s;
-  }
-
-  .section-title {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-  .field-group { margin-bottom: 20px; }
-  .tag-input-area {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 56px;
-    cursor: text;
-    transition: border-color 0.2s;
-  }
-  .tag-input-area:focus-within { border-color: var(--gold); }
-  .tag {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 0.82rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text);
-    white-space: nowrap;
-  }
-  .tag .remove {
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 1rem;
-    line-height: 1;
-    transition: color 0.2s;
-  }
-  .tag .remove:hover { color: var(--red); }
-  .tag-input {
-    border: none;
-    background: transparent;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    outline: none;
-    flex: 1;
-    min-width: 100px;
-  }
-  .tag-input::placeholder { color: var(--muted); }
-
-  .count-pill {
-    display: inline-block;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 2px 10px;
-    font-size: 0.75rem;
-    color: var(--muted);
-    margin-left: 8px;
-  }
-
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-  }
-  .toggle-row span { font-size: 0.88rem; color: var(--text); }
-  .toggle-row small { display: block; color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
-  .toggle {
-    width: 44px; height: 24px;
-    background: var(--border);
-    border-radius: 12px;
-    cursor: pointer;
-    position: relative;
-    transition: background 0.25s;
-    flex-shrink: 0;
-  }
-  .toggle.on { background: var(--gold); }
-  .toggle::after {
-    content: '';
-    position: absolute;
-    width: 18px; height: 18px;
-    background: white;
-    border-radius: 50%;
-    top: 3px; left: 3px;
-    transition: transform 0.25s;
-  }
-  .toggle.on::after { transform: translateX(20px); }
-
-  .btn {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 10px;
-  }
-  .btn-primary { background: var(--gold); color: #000; }
-  .btn-primary:hover { background: var(--gold-dark); }
-  .btn-ghost {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-  }
-  .btn-ghost:hover { color: var(--text); border-color: #444; }
-
-  .draw-wrapper { text-align: center; }
-  .draw-btn {
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #ffd86b, #c9a020);
-    border: none;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.6rem;
-    letter-spacing: 3px;
-    color: #000;
-    cursor: pointer;
-    box-shadow: 0 0 0 12px rgba(245,200,66,0.1), 0 0 0 24px rgba(245,200,66,0.05);
-    transition: transform 0.15s, box-shadow 0.15s;
-    margin: 20px auto;
-    display: block;
-  }
-  .draw-btn:hover:not(:disabled) {
-    transform: scale(1.04);
-    box-shadow: 0 0 0 16px rgba(245,200,66,0.15), 0 0 0 32px rgba(245,200,66,0.07);
-  }
-  .draw-btn:active:not(:disabled) { transform: scale(0.96); }
-  .draw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .participants-left { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
-  .participants-left strong { color: var(--text); }
-
-  #firebase-modal {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.85);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 100;
-    padding: 20px;
-  }
-  .modal-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 32px;
-    max-width: 480px;
-    width: 100%;
-  }
-  .modal-box h2 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.8rem;
-    letter-spacing: 2px;
-    color: var(--gold);
-    margin-bottom: 6px;
-  }
-  .modal-box p { font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
-  .modal-box input, .modal-box textarea {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.83rem;
-    padding: 10px 12px;
-    margin-bottom: 10px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .modal-box input:focus, .modal-box textarea:focus { border-color: var(--gold); }
-  .modal-box textarea { height: 120px; resize: none; }
-  .field-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; letter-spacing: 1px; }
-  .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
-  .hint a { color: var(--gold); text-decoration: none; }
-
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+body{font-family:Arial;background:#111;color:#fff;text-align:center;padding:40px}
+textarea{width:90%;height:150px;margin:10px}
+button{padding:10px 20px;font-size:16px;cursor:pointer}
 </style>
 </head>
 <body>
 
-<!-- FIREBASE CONFIG MODAL -->
-<div id="firebase-modal">
-  <div class="modal-box">
-    <h2>Firebase Setup</h2>
-    <p>Paste your Firebase Realtime Database config below. This enables live sync between your laptop and phone. <a href="https://console.firebase.google.com/" target="_blank">Get config →</a></p>
-    <div class="hint">
-      1. Go to Firebase Console → Create project → Realtime Database → Create database (test mode)<br>
-      2. Project Settings → Your apps → Add web app → Copy config
-    </div>
-    <div class="field-label">PASTE YOUR FIREBASE CONFIG JSON</div>
-    <textarea id="fb-config-input" placeholder='{
- apiKey: "AIzaSyBPyOSIy7tTLIpJME20Zz8et3fSFsFZnEs",
-  authDomain: "luckydraw-9279e.firebaseapp.com",
-  databaseURL: "https://luckydraw-9279e-default-rtdb.firebaseio.com",
-  projectId: "luckydraw-9279e",
-  storageBucket: "luckydraw-9279e.firebasestorage.app",
-  messagingSenderId: "658856386719",
-  appId: "1:658856386719:web:367f21ec05611b036202aa",
-  measurementId: "G-SC7BND34RN"
-}'></textarea>
-    <button class="btn btn-primary" onclick="initFirebase()">Connect & Continue</button>
-    <p style="text-align:center; margin-top:12px;">
-      <span style="font-size:0.8rem; color:var(--muted); cursor:pointer;" onclick="skipFirebase()">Skip (run locally without sync)</span>
-    </p>
-  </div>
-</div>
+<h2>Firebase Setup (Improved)</h2>
 
-<!-- MODE SELECT -->
-<div id="mode-screen" style="display:none;">
-  <h1>LUCKY DRAW</h1>
-  <p>Select how you're using this device</p>
-  <button class="mode-btn" onclick="enterMode('admin')">
-    <span class="icon">💻</span>
-    <span>Admin / Laptop<small>Add participants, set rewards, manage the draw</small></span>
-  </button>
-  <button class="mode-btn" onclick="enterMode('mobile')">
-    <span class="icon">📱</span>
-    <span>Mobile / Trigger<small>Tap the button to start the draw on all screens</small></span>
-  </button>
-  <button class="mode-btn" onclick="enterMode('display')">
-    <span class="icon">📺</span>
-    <span>Display Only<small>Show the winner on a projector or TV</small></span>
-  </button>
-</div>
-
-<!-- MAIN APP -->
-<div id="app">
-  <div class="top-bar">
-    <h1>LUCKY DRAW</h1>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <span class="badge badge-live" id="sync-badge">● LIVE</span>
-      <span class="badge" id="mode-badge"></span>
-    </div>
-  </div>
-
-  <div class="winner-box">
-    <div id="winner-name">READY</div>
-    <div id="winner-award">Waiting for draw...</div>
-    <div class="slot-ticker" id="slot-ticker"></div>
-  </div>
-
-  <!-- ADMIN CONTROLS -->
-  <div id="admin-panel" style="display:none;">
-    <div class="field-group">
-      <div class="section-title">Participants <span class="count-pill" id="names-count">0</span></div>
-      <div class="tag-input-area" id="names-area" onclick="focusInput('names-input')">
-        <input class="tag-input" id="names-input" placeholder="Type a name and press Enter..." onkeydown="handleTag(event,'names')">
-      </div>
-    </div>
-    <div class="field-group">
-      <div class="section-title">Rewards <span class="count-pill" id="awards-count">0</span></div>
-      <div class="tag-input-area" id="awards-area" onclick="focusInput('awards-input')">
-        <input class="tag-input" id="awards-input" placeholder="Type a reward and press Enter..." onkeydown="handleTag(event,'awards')">
-      </div>
-    </div>
-    <div class="toggle-row">
-      <div>
-        <span>Remove winner from list</span>
-        <small>Each person can only win once</small>
-      </div>
-      <div class="toggle on" id="remove-toggle" onclick="toggleRemove()"></div>
-    </div>
-    <button class="btn btn-ghost" onclick="resetSystem()">Clear Winner Display</button>
-  </div>
-
-  <!-- MOBILE DRAW PANEL -->
-  <div id="mobile-panel" class="draw-wrapper" style="display:none;">
-    <button class="draw-btn" id="draw-btn" onclick="requestDraw()">TAP<br>TO<br>DRAW</button>
-    <div class="participants-left" id="part-left">Loading participants...</div>
-  </div>
-</div>
+<textarea id="configInput" placeholder="Paste Firebase config here..."></textarea>
+<br>
+<button onclick="initFirebase()">Connect</button>
 
 <script>
-  let db = null;
-  let mode = null;
-  let removeWinner = true;
-  let names = [];
-  let awards = [];
-  let isLocalMode = false;
-  let slotInterval = null;
+let db;
 
-  function initFirebase() {
-    const raw = document.getElementById('fb-config-input').value.trim();
-    let config;
-    try { config = JSON.parse(raw); }
-    catch(e) { alert('Invalid JSON. Please paste the full Firebase config object.'); return; }
-    if (!config.databaseURL) {
-      alert('Missing "databaseURL" in config. Make sure Realtime Database is enabled.');
-      return;
-    }
+function parseConfig(raw){
+  try {
+    // Try JSON first
+    return JSON.parse(raw);
+  } catch(e) {
     try {
-      firebase.initializeApp(config);
-      db = firebase.database();
-      document.getElementById('firebase-modal').style.display = 'none';
-      document.getElementById('mode-screen').style.display = 'block';
-    } catch(e) { alert('Firebase error: ' + e.message); }
-  }
-
-  function skipFirebase() {
-    isLocalMode = true;
-    document.getElementById('firebase-modal').style.display = 'none';
-    document.getElementById('mode-screen').style.display = 'block';
-  }
-
-  function enterMode(m) {
-    mode = m;
-    document.getElementById('mode-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    const modeBadge = document.getElementById('mode-badge');
-    if (m === 'admin') {
-      document.getElementById('admin-panel').style.display = 'block';
-      modeBadge.textContent = 'ADMIN';
-      modeBadge.className = 'badge badge-admin';
-    } else if (m === 'mobile') {
-      document.getElementById('mobile-panel').style.display = 'block';
-      modeBadge.textContent = 'MOBILE';
-      modeBadge.className = 'badge badge-mobile';
-    } else {
-      modeBadge.textContent = 'DISPLAY';
-      modeBadge.className = 'badge badge-live';
-    }
-    if (isLocalMode) {
-      document.getElementById('sync-badge').textContent = '⚡ LOCAL';
-      document.getElementById('sync-badge').style.color = '#f5c842';
-    } else {
-      listenCloud();
+      // Fallback to JS object
+      return new Function('return ' + raw)();
+    } catch(err) {
+      throw new Error('Invalid format');
     }
   }
+}
 
-  function focusInput(id) { document.getElementById(id).focus(); }
-
-  function handleTag(e, type) {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const input = document.getElementById(type + '-input');
-      const val = input.value.trim().replace(/,$/, '');
-      if (!val) return;
-      if (type === 'names') addName(val);
-      else addAward(val);
-      input.value = '';
-      syncToCloud();
-    }
-    if (e.key === 'Backspace' && e.target.value === '') {
-      if (type === 'names' && names.length) { names.pop(); renderTags('names'); syncToCloud(); }
-      if (type === 'awards' && awards.length) { awards.pop(); renderTags('awards'); syncToCloud(); }
+function validateConfig(config){
+  const required = ['apiKey','authDomain','databaseURL','projectId'];
+  for(let key of required){
+    if(!config[key]){
+      throw new Error(`Missing field: ${key}`);
     }
   }
+}
 
-  function addName(val) { if (!names.includes(val)) { names.push(val); renderTags('names'); } }
-  function addAward(val) { if (!awards.includes(val)) { awards.push(val); renderTags('awards'); } }
+function initFirebase(){
+  const raw = document.getElementById('configInput').value.trim();
 
-  function renderTags(type) {
-    const arr = type === 'names' ? names : awards;
-    const area = document.getElementById(type + '-area');
-    const input = document.getElementById(type + '-input');
-    Array.from(area.querySelectorAll('.tag')).forEach(t => t.remove());
-    arr.forEach((item, i) => {
-      const tag = document.createElement('div');
-      tag.className = 'tag';
-      tag.innerHTML = `${item} <span class="remove" onclick="removeTag('${type}',${i})">×</span>`;
-      area.insertBefore(tag, input);
-    });
-    document.getElementById(type === 'names' ? 'names-count' : 'awards-count').textContent = arr.length;
-    updatePartLeft();
+  if(!raw){
+    alert('Paste config first');
+    return;
   }
 
-  function removeTag(type, i) {
-    if (type === 'names') names.splice(i, 1);
-    else awards.splice(i, 1);
-    renderTags(type);
-    syncToCloud();
+  let config;
+  try{
+    config = parseConfig(raw);
+    validateConfig(config);
+  }catch(e){
+    alert('❌ Error: ' + e.message);
+    return;
   }
 
-  function toggleRemove() {
-    removeWinner = !removeWinner;
-    document.getElementById('remove-toggle').classList.toggle('on', removeWinner);
-    syncToCloud();
+  try{
+    firebase.initializeApp(config);
+    db = firebase.database();
+    alert('✅ Firebase Connected Successfully');
+  }catch(e){
+    alert('Firebase Error: ' + e.message);
   }
-
-  function syncToCloud() {
-    if (!db) return;
-    db.ref('settings').set({ names: names.join(','), awards: awards.join(','), removeWinner });
-  }
-
-  function listenCloud() {
-    if (!db) return;
-    db.ref('settings').on('value', snap => {
-      const data = snap.val();
-      if (!data) return;
-      if (mode !== 'admin') {
-        names = data.names ? data.names.split(',').map(n => n.trim()).filter(Boolean) : [];
-        awards = data.awards ? data.awards.split(',').map(n => n.trim()).filter(Boolean) : [];
-        removeWinner = data.removeWinner !== false;
-        updatePartLeft();
-      }
-    });
-    db.ref('liveDraw').on('value', snap => {
-      const data = snap.val();
-      if (!data) return;
-      handleDrawEvent(data);
-    });
-  }
-
-  function requestDraw() {
-    if (names.length === 0) { alert('No participants left!'); return; }
-    const winner = names[Math.floor(Math.random() * names.length)];
-    const award = awards.length ? awards[Math.floor(Math.random() * awards.length)] : '🏆 Prize';
-    const event = { status: 'spinning', winner, award, timestamp: Date.now() };
-    if (db) { db.ref('liveDraw').set(event); }
-    else { handleDrawEvent(event); }
-    if (removeWinner) {
-      names = names.filter(n => n !== winner);
-      if (mode === 'admin') renderTags('names');
-      syncToCloud();
-    }
-    updatePartLeft();
-  }
-
-  function handleDrawEvent(data) {
-    if (data.status === 'ready') {
-      resetDisplay();
-      const btn = document.getElementById('draw-btn');
-      if (btn) btn.disabled = false;
-      return;
-    }
-    if (data.status === 'spinning') startAnimation(data.winner, data.award);
-  }
-
-  function startAnimation(winner, award) {
-    const nameEl = document.getElementById('winner-name');
-    const awardEl = document.getElementById('winner-award');
-    const ticker = document.getElementById('slot-ticker');
-    const btn = document.getElementById('draw-btn');
-    if (btn) btn.disabled = true;
-    nameEl.className = '';
-    nameEl.style.color = '';
-    awardEl.className = '';
-    const sampleNames = names.length > 1 ? names : ['...'];
-    let t = 0;
-    slotInterval = setInterval(() => {
-      nameEl.innerText = sampleNames[t % sampleNames.length] || '???';
-      t++;
-    }, 80);
-    setTimeout(() => {
-      clearInterval(slotInterval);
-      nameEl.innerText = winner;
-      nameEl.className = 'revealed';
-      awardEl.innerText = '🏆 ' + award;
-      awardEl.className = 'revealed';
-      ticker.innerText = '';
-      if (btn) btn.disabled = false;
-      confetti({ particleCount: 180, spread: 80, origin: { y: 0.5 }, colors: ['#f5c842','#ffffff','#3ddc84','#e94040'] });
-      setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.3 }, angle: 60, colors: ['#f5c842','#fff'] }), 300);
-      setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.3 }, angle: 120, colors: ['#3ddc84','#f5c842'] }), 500);
-    }, 2500);
-  }
-
-  function resetDisplay() {
-    clearInterval(slotInterval);
-    document.getElementById('winner-name').innerText = 'READY';
-    document.getElementById('winner-name').className = '';
-    document.getElementById('winner-name').style.color = '';
-    document.getElementById('winner-award').innerText = 'Waiting for draw...';
-    document.getElementById('winner-award').className = '';
-  }
-
-  function resetSystem() {
-    if (db) db.ref('liveDraw').set({ status: 'ready', timestamp: Date.now() });
-    else resetDisplay();
-  }
-
-  function updatePartLeft() {
-    const el = document.getElementById('part-left');
-    if (el) el.innerHTML = `<strong>${names.length}</strong> participant${names.length !== 1 ? 's' : ''} remaining`;
-  }
+}
 </script>
+
 </body>
 </html>
