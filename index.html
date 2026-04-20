@@ -3,76 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lucky Draw</title>
+<title>Lucky Draw Pro</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#111;color:#fff;text-align:center;padding:40px}
-textarea{width:90%;height:150px;margin:10px}
-button{padding:10px 20px;font-size:16px;cursor:pointer}
+body{font-family:Arial;background:#0d0d0d;color:#fff;text-align:center;padding:20px}
+input{padding:10px;margin:5px;width:200px}
+button{padding:10px 20px;margin:10px;cursor:pointer}
+#winner{font-size:40px;margin:30px;color:gold}
 </style>
 </head>
 <body>
 
-<h2>Firebase Setup (Improved)</h2>
+<h1>🎰 Lucky Draw Pro</h1>
 
-<textarea id="configInput" placeholder="Paste Firebase config here..."></textarea>
-<br>
-<button onclick="initFirebase()">Connect</button>
+<div>
+<input id="nameInput" placeholder="Add participant">
+<button onclick="addName()">Add</button>
+</div>
+
+<div>
+<input id="prizeInput" placeholder="Add prize">
+<button onclick="addPrize()">Add</button>
+</div>
+
+<button onclick="drawWinner()">🎯 Draw Winner</button>
+
+<h2 id="winner">Waiting...</h2>
 
 <script>
-let db;
+// 🔥 FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyBKMryvAUR4SOCWcl8P8JfGexZNSejD_E8",
+  authDomain: "rafale-draw.firebaseapp.com",
+  databaseURL: "https://rafale-draw-default-rtdb.firebaseio.com",
+  projectId: "rafale-draw",
+  storageBucket: "rafale-draw.firebasestorage.app",
+  messagingSenderId: "278599574531",
+  appId: "1:278599574531:web:1016ea3f9f79f526151a36"
+};
 
-function parseConfig(raw){
-  try {
-    // Try JSON first
-    return JSON.parse(raw);
-  } catch(e) {
-    try {
-      // Fallback to JS object
-      return new Function('return ' + raw)();
-    } catch(err) {
-      throw new Error('Invalid format');
-    }
-  }
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
 }
 
-function validateConfig(config){
-  const required = ['apiKey','authDomain','databaseURL','projectId'];
-  for(let key of required){
-    if(!config[key]){
-      throw new Error(`Missing field: ${key}`);
-    }
-  }
+const db = firebase.database();
+
+let names = [];
+let prizes = [];
+
+// ADD NAME
+function addName(){
+  const val = document.getElementById('nameInput').value.trim();
+  if(!val) return;
+  names.push(val);
+  db.ref('data/names').set(names);
+  document.getElementById('nameInput').value='';
 }
 
-function initFirebase(){
-  const raw = document.getElementById('configInput').value.trim();
-
-  if(!raw){
-    alert('Paste config first');
-    return;
-  }
-
-  let config;
-  try{
-    config = parseConfig(raw);
-    validateConfig(config);
-  }catch(e){
-    alert('❌ Error: ' + e.message);
-    return;
-  }
-
-  try{
-    firebase.initializeApp(config);
-    db = firebase.database();
-    alert('✅ Firebase Connected Successfully');
-  }catch(e){
-    alert('Firebase Error: ' + e.message);
-  }
+// ADD PRIZE
+function addPrize(){
+  const val = document.getElementById('prizeInput').value.trim();
+  if(!val) return;
+  prizes.push(val);
+  db.ref('data/prizes').set(prizes);
+  document.getElementById('prizeInput').value='';
 }
+
+// DRAW
+function drawWinner(){
+  if(names.length===0) return alert('No participants');
+  const winner = names[Math.floor(Math.random()*names.length)];
+  const prize = prizes.length ? prizes[Math.floor(Math.random()*prizes.length)] : 'Prize';
+
+  db.ref('draw').set({winner, prize, time:Date.now()});
+}
+
+// LISTEN LIVE
+firebase.database().ref('data').on('value', snap=>{
+  const d = snap.val();
+  if(!d) return;
+  names = d.names || [];
+  prizes = d.prizes || [];
+});
+
+firebase.database().ref('draw').on('value', snap=>{
+  const d = snap.val();
+  if(!d) return;
+
+  const el = document.getElementById('winner');
+  el.innerText = '🎉 ' + d.winner + ' → ' + d.prize;
+
+  confetti({particleCount:150,spread:70});
+});
+
 </script>
 
 </body>
